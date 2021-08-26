@@ -97,7 +97,7 @@ class NotionClient(object):
 
     def start_monitoring(self):
         self._monitor.poll_async()
-    
+
     def _fetch_guest_space_data(self, records):
         """
         guest users have an empty `space` dict, so get the space_id from the `space_view` dict instead,
@@ -114,7 +114,6 @@ class NotionClient(object):
         records["space"] = {
             space["id"]: {"value": space} for space in space_data["results"]
         }
-
 
     def _set_token(self, email=None, password=None):
         if not email:
@@ -179,7 +178,9 @@ class NotionClient(object):
             block_class = BLOCK_TYPES.get(block.get("type", ""), Block)
         return block_class(self, block_id)
 
-    def duplicate_block(self, source_block_id, target_block_id, wait_interval=1, wait_tries=10):
+    def duplicate_block(
+        self, source_block_id, target_block_id, wait_interval=1, wait_tries=10
+    ):
         """
         Duplicate a block
         """
@@ -461,7 +462,9 @@ class NotionClient(object):
             elif state == "success":
                 return state
 
-        logger.debug("Task takes more time than expected. Specify 'interval' or 'tries' to wait more.")
+        logger.debug(
+            "Task takes more time than expected. Specify 'interval' or 'tries' to wait more."
+        )
 
 
 class Transaction(object):

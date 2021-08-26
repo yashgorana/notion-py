@@ -197,7 +197,9 @@ class Collection(Record):
                 return prop
         return None
 
-    def add_row(self, update_views=True, source_block_id=None, source_block=None, **kwargs):
+    def add_row(
+        self, update_views=True, source_block_id=None, source_block=None, **kwargs
+    ):
         """
         Create a new empty CollectionRowBlock under this collection, and return the instance.
         Specify 'source_block' to create a row from a template block.
