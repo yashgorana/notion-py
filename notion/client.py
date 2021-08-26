@@ -9,6 +9,7 @@ from urllib.parse import urljoin
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from getpass import getpass
+from time import sleep
 
 from .block import Block, BLOCK_TYPES
 from .collection import (
@@ -177,6 +178,29 @@ class NotionClient(object):
         else:
             block_class = BLOCK_TYPES.get(block.get("type", ""), Block)
         return block_class(self, block_id)
+
+    def duplicate_block(self, source_block_id, target_block_id, wait_interval=1, wait_tries=10):
+        """
+        Duplicate a block
+        """
+
+        data = {
+            "task": {
+                "eventName": "duplicateBlock",
+                "request": {
+                    "sourceBlockId": source_block_id,
+                    "targetBlockId": target_block_id,
+                    "appendContentOnly": True,
+                },
+            }
+        }
+        response = self.post("enqueueTask", data).json()
+        task_id = response.get("taskId")
+
+        if task_id:
+            self.wait_for_task(task_id, interval=wait_interval, tries=wait_tries)
+
+        return True
 
     def get_collection(self, collection_id, force_refresh=False):
         """
@@ -402,6 +426,42 @@ class NotionClient(object):
                 )
 
         return record_id
+
+    def get_task_status(self, task_id):
+        """
+        Get a status of a single task
+        """
+        data = self.post("getTasks", dict(taskIds=[task_id])).json()
+
+        results = data.get("results")
+        if results is None:
+            return None
+
+        if not results:
+            # Notion does not know about such a task
+            print("Invalid task ID.")
+            return None
+
+        try:
+            task = results.pop()
+            return task.get("state", None)
+        except IndexError:
+            logger.error("There is no task {}".format(results))
+            return None
+
+    def wait_for_task(self, task_id, interval=1, tries=10):
+        """
+        Wait for a task by looping 'tries' times ever 'interval' seconds.
+        The 'interval' parameter can be used to specify milliseconds using double (e.g 0.75).
+        """
+        for i in range(tries):
+            state = self.get_task_status(task_id)
+            if state in ["not_started", "in_progress"]:
+                sleep(interval)
+            elif state == "success":
+                return state
+
+        logger.debug("Task takes more time than expected. Specify 'interval' or 'tries' to wait more.")
 
 
 class Transaction(object):

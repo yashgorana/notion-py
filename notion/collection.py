@@ -197,13 +197,23 @@ class Collection(Record):
                 return prop
         return None
 
-    def add_row(self, update_views=True, **kwargs):
+    def add_row(self, update_views=True, source_block_id=None, source_block=None, **kwargs):
         """
         Create a new empty CollectionRowBlock under this collection, and return the instance.
+        Specify 'source_block' to create a row from a template block.
         """
 
         row_id = self._client.create_record("block", self, type="page")
         row = CollectionRowBlock(self._client, row_id)
+
+        if source_block:
+            # The source block can be either an ID or a URL
+            source_block = self._client.get_block(source_block)
+            source_block_id = source_block.id
+
+        # User wants to create a row from a template
+        if source_block_id:
+            self._client.duplicate_block(source_block_id, row_id)
 
         with self._client.as_atomic_transaction():
             for key, val in kwargs.items():
